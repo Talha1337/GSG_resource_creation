@@ -33,11 +33,41 @@ def add_link_to_keyword(pdf_path, output_path, keyword, url):
     if found:
         print(f'✅ Added link to "{keyword}" in: {os.path.basename(pdf_path)}')
     else:
-        print(f'⚠️ Keyword not found in: {os.path.basename(pdf_path)}')
+        print(f'⚠️ Keyword not found in: {os.path.basename(pdf_path)}')  
+        
+def parse_filename(filename):
+    # Extract the keyword from the filename
+    base_name = os.path.splitext(filename)[0]
+    parts = base_name.split('-')
+    if len(parts) > 3:
+        assert parts[2].lower() in ['a1', 'a2', 'b1', 'b2', 'c1', 'c2'], "Invalid level in filename"
+        assert parts[1].lower() in ['speaking', 'listening', 'reading', 'writing'], "Invalid skill in filename"
+        return (parts[2], "-".join(parts[3:]).lower())  # Assuming the keyword is the fourth part
+    return None
         
 # Step 3: Process a folder of PDFs and add links to the specified keyword
-folder_path = "resources"
-keyword = "lorem"
+folder_path = "resources/Speaking"
+keyword = "video"
 url = "https://example.com"
+output_folder = "resources/Speaking"
 
-process_folder(folder_path, keyword, url)
+
+for filename in os.listdir(folder_path):
+    if filename.endswith('.pdf'):
+        pdf_path = os.path.join(folder_path, filename)
+        output_path = os.path.join(output_folder, filename)
+        print(f'Processing file: {filename}')
+        filename_keywords = parse_filename(filename)
+        print(f"current keywords: {filename_keywords}")
+        level = filename_keywords[0] if filename_keywords else None
+        topic = filename_keywords[1] if filename_keywords else None
+        if not level or not keyword:
+            print(f"Skipping file {filename} due to missing level or keyword.")
+            continue
+        url_to_add = f"expected link to be added: https://learnenglish.britishcouncil.org/skills/speaking/{level}-speaking/{topic}"
+        print(f'Adding link to keyword "{keyword}" in {filename} with URL: {url_to_add}')
+        add_link_to_keyword(pdf_path, output_path, keyword, url_to_add)
+
+        # add_link_to_keyword(pdf_path, output_path, keyword, url)
+    else:
+        print(f'Skipping non-PDF file: {filename}')
