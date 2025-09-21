@@ -26,7 +26,7 @@ def add_link_to_keyword(pdf_path, output_path, keyword, url):
                 "kind": fitz.LINK_URI
             })
             found = True
-            break
+            break  # Stop after the first instance
     doc.save(output_path)
     doc.close()
 
@@ -48,14 +48,15 @@ def parse_filename(filename):
 # Step 3: Process a folder of PDFs and add links to the specified keyword
 folder_path = "resources/Speaking"
 keyword = "video"
-url = "https://example.com"
-output_folder = "resources/Speaking"
+output_folder = "resources/Speaking_modified"
 
-
+if not os.path.exists(output_folder):
+    os.makedirs(output_folder)
 for filename in os.listdir(folder_path):
     if filename.endswith('.pdf'):
         pdf_path = os.path.join(folder_path, filename)
         output_path = os.path.join(output_folder, filename)
+
         print(f'Processing file: {filename}')
         filename_keywords = parse_filename(filename)
         print(f"current keywords: {filename_keywords}")
@@ -64,7 +65,7 @@ for filename in os.listdir(folder_path):
         if not level or not keyword:
             print(f"Skipping file {filename} due to missing level or keyword.")
             continue
-        url_to_add = f"expected link to be added: https://learnenglish.britishcouncil.org/skills/speaking/{level}-speaking/{topic}"
+        url_to_add = f"https://learnenglish.britishcouncil.org/skills/speaking/{level}-speaking/{topic}"
         print(f'Adding link to keyword "{keyword}" in {filename} with URL: {url_to_add}')
         add_link_to_keyword(pdf_path, output_path, keyword, url_to_add)
 
