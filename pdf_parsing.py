@@ -6,6 +6,7 @@ import subprocess
 import sys
 from pprint import pprint
 
+
 # Load the re-uploaded PDF
 pdf_path = os.getcwd() + "/resources/Reading/LearnEnglish-Reading-A1-An-airport-departures-board.pdf"
 doc = fitz.open(pdf_path)
