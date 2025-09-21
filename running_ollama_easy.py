@@ -5,7 +5,7 @@ from pydantic import BaseModel
 class Response(BaseModel):
     answer: dict
 # This is where the topic name would go. "The topic to create ... "
-response = ChatResponse = chat(model='tinyllama', messages=[
+response = ChatResponse = chat(model='deepseek', messages=[
   {
     'role': 'user',
     'content': f"""you are a helpful assistant that can help with creating preparation tasks for language learning materials.
