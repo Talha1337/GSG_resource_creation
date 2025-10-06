@@ -11,14 +11,20 @@ from io import BytesIO
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
+from running_ollama_easy import ResourceCreator
 
 class BritishCouncilFinalDocument:
-    def __init__(self, preparation_task : PreparationTask, tasks : List[MiddleTask], discussion : Discussion):
+    def __init__(self, preparation_task : PreparationTask, middle_task : MiddleTask, discussion : Discussion, creator : ResourceCreator = None):
+        """
+        Initialize the final document generator.
+        """
         self.pdf_content = BytesIO()
         self.preparation_task = preparation_task
-        self.tasks = tasks
+        self.middle_task = middle_task
         self.discussion = discussion
-
+        self.creator = creator
+        if self.creator is None:
+                self.creator = ResourceCreator(topic=self.preparation_task.topic)
     def generate_final_document(self, fp : str = "final_document.pdf") -> bool:
         """
         Will generate a final document that is a pdf with the sections based on
@@ -39,8 +45,7 @@ class BritishCouncilFinalDocument:
         """
         Will generate a section for the tasks.
         """
-        # return self.tasks. watever
-        pass
+        self.middle_task.create_task_pdf()
     
     def _generate_discussion_section(self) -> str:
         """
@@ -71,18 +76,20 @@ class BritishCouncilFinalDocument:
     
 
 if __name__ == "__main__":
+    
+    prep_task = PreparationTask(
+        skill="Speaking",
+        difficulty="A2",
+        topic="Travel",
+        correct_pairs={
+            "airport": "a place where planes take off and land",
+            "luggage": "bags and suitcases",
+            "boarding pass": "a document that allows you to get on a plane"
+        }
+    ),
     example_doc = BritishCouncilFinalDocument(
-        PreparationTask(
-            skill="Speaking",
-            difficulty="A2",
-            topic="Travel",
-            correct_pairs={
-                "airport": "a place where planes take off and land",
-                "luggage": "bags and suitcases",
-                "boarding pass": "a document that allows you to get on a plane"
-            }
-        ),
-        None,
+        prep_task,
+        ,
         None
     )
 
