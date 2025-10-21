@@ -8,7 +8,7 @@ from reportlab.platypus import Paragraph
 from io import BytesIO
 import os
 import random
-from running_ollama_easy import ResourceCreator, ResponsePrep, ResponseMidTaskExtract, ResponseMidTaskQuestionsTF, ResponseMidTaskQuestionsMCQ, ResponseDiscussion, BaseModel
+from running_ollama_easy import ResourceCreator, ResponsePrep, ResponseMidTask, ResponseMidTaskQuestionsMCQ, ResponseDiscussion, BaseModel
 
 
 class Task:
@@ -25,7 +25,7 @@ class Task:
         self.skill = skill
         self.difficulty = difficulty
         self.topic = topic
-        self.content_dict = content_dict.answer if isinstance(content_dict, (ResponsePrep, ResponseMidTaskExtract, ResponseMidTaskQuestionsTF, ResponseMidTaskQuestionsMCQ, ResponseDiscussion)) else content_dict
+        self.content_dict = content_dict.answer if isinstance(content_dict, (ResponsePrep, ResponseMidTask, ResponseMidTaskQuestionsMCQ, ResponseDiscussion)) else content_dict
         self.answer_key = {}
         self.create_pdf_initial()
            
@@ -336,6 +336,8 @@ if __name__ == "__main__":
     # Create the PDF
     output_path = vocabulary_task.create_pdf()
     print(f"Answer key: {vocabulary_task.get_answer_key()}")
+    
+    {'topic': 'Asking for help', 'extract': "Dear Emily,\nI'm writing to ask for your help. I've been trying to fix my car but it's not working properly.\nCould you please recommend a reliable mechanic in your area? Also, if you have some time,\ncan you assist me with the repairs yourself? I'd really appreciate that because I'm\nnot very experienced with cars.\nI'll keep you updated on how things go. Let me know if you're available this weekend to work\non it together.\nBest regards,\nAlex", 'questions': ['The writer is asking for help with car repairs', 'Emily has experience in repairing cars', 'Alex knows an experienced mechanic', 'Alex plans to fix the car himself'], 'answers': [True, False, False, True]}
     
     middle_task_test = MiddleTask(
         skill = "Reading",
