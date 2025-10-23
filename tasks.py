@@ -5,6 +5,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.platypus import Paragraph
+from reportlab.platypus import PageBreak
 from io import BytesIO
 import os
 import random
@@ -27,6 +28,7 @@ class Task:
         self.topic = topic
         self.content_dict = content_dict.answer if isinstance(content_dict, (ResponsePrep, ResponseMidTask, ResponseMidTaskQuestionsMCQ, ResponseDiscussion)) else content_dict
         self.answer_key = {}
+        self.section = "default"
         self.create_pdf_initial()
            
     def create_pdf_initial(self, packet: BytesIO = None) -> BytesIO:
@@ -46,7 +48,7 @@ class Task:
     def create_output_path(self) -> str:
         # Create default filename based on skill, difficulty, and topic
         safe_topic = self.topic.replace(" ", "_").replace("-", "_")
-        filename = f"{self.skill}_{self.difficulty}_{safe_topic}_Preparation_Task.pdf"
+        filename = f"{self.skill}_{self.difficulty}_{safe_topic}_{self.section}.pdf"
         current_dir = os.getcwd()
         output_path = os.path.join(current_dir, "resources_edited", "Reading", filename)
         return output_path
@@ -70,6 +72,7 @@ class PreparationTask(Task):
         """
         super().__init__(skill, difficulty, topic, content_dict)
         self.correct_pairs = self.content_dict["correct_pairs"]
+        self.section = "Preparation_Task"
         
     def _shuffle_answers(self):
         """
@@ -217,10 +220,26 @@ class MiddleTask(Task):
     """Class for building English language reading tasks.
     Supports various task types such as extract, true/false questions, multiple choice questions, and ordering tasks.
     """
-    def __init__(self, skill: str, difficulty: str, topic: str, task_types: list, extract: str):
+    def __init__(self, skill: str, difficulty: str, topic: str, task_types: list, content_dict: Union[ResponseMidTask, dict] = None):
+        """
+        Initialize the MiddleTask with the given parameters.
+        Args:
+            skill (str): The language skill (e.g., "Reading", "Writing", "Speaking", "Listening")
+            difficulty (str): The difficulty level (e.g., "A1", "A2", "B1", "B2", "C1")
+            topic (str): The topic of the exercise
+            task_types (list): List of task types to include (e.g., ["TF", "MCQ", "Ordering"])
+            extract (str): The text extract for the reading task
+            content_dict (Union[ResponseMidTask, dict], optional): Additional content for the task.
+        """
         super().__init__(skill, difficulty, topic, content_dict)
+        self.content_dict = content_dict.answer if isinstance(content_dict, ResponseMidTask) else content_dict
+        self.extract = self.content_dict.get("extract", "") if self.content_dict else ""
+        self.questions = self.content_dict.get("questions", []) if self.content_dict else []
+        self.answers = self.content_dict.get("answers", []) if self.content_dict else []
+        if self.topic != self.content_dict.get("topic", ""):
+            print(f"Warning: Topic mismatch between provided topic '{self.topic}' and content_dict topic '{self.content_dict.get('topic', '')}'")
         self.task_types = task_types
-        self.extract = extract
+        self.section = "Middle_Task"
         
     def display_true_false_questions(self):
         print("True/False Questions:")
@@ -247,7 +266,7 @@ class MiddleTask(Task):
         output_pdf.add_page(new_pdf.pages[0])
         
         with open(output_path, "wb") as f:
-            output_pdf.write(f)
+            f.write(pdf_content.read())
         
         return output_path
         
@@ -273,7 +292,7 @@ class MiddleTask(Task):
         # Draw extract and get its height
         extract_paragraph = self.process_extract()
         extract_height = extract_paragraph.height
-        extract_y_position = y_start - line_height*2 - extract_height  # Starting position for extract
+        extract_y_position = y_start - line_height*3 - extract_height  # Starting position for extract
         extract_paragraph.drawOn(self.can, x_start, extract_y_position)
         
         # Calculate next position AFTER the extract
@@ -282,20 +301,93 @@ class MiddleTask(Task):
         next_y_position = extract_y_position  # Add spacing
         
         # Draw headers (now positioned dynamically)
+        next_y_position -= line_height * 2
         self.can.setFont("Helvetica-Bold", 12)
         self.can.drawString(x_start, next_y_position, "Intermediate Task 1")
         
-        # Draw items and answers
+        # Draw items
+        next_y_position -= line_height * 3
         self.can.setFont("Helvetica", 12)
+        self.can.drawString(x_start, next_y_position, "Determine whether the following statements are True or False based on the extract:")
+        next_y_position -= line_height * 2
+        for i, (question, answer) in enumerate(zip(self.questions, self.answers)):
+            self.can.drawString(x_start, next_y_position, f"{i+1}. {question}")
+            self.can.drawRightString(x_start + 180*mm, next_y_position, "True/False")
+            next_y_position -= line_height
+        
+        # Draw Answers section
+        # start a new page for the Answers section
+        self.can.showPage()
+        # redraw header on the new page
+        can_width, can_height = A4
+        self.can.setFont("Helvetica", 12)
+        self.can.drawRightString(can_width - 20 * mm, 287 * mm, f"{self.skill}: {self.difficulty}")
+        self.can.setFont("Helvetica", 18)
+        self.can.drawRightString(can_width - 20 * mm, 280 * mm, self.topic)
+        # reset vertical position for the new page
+        next_y_position = y_start
+        self.can.setFont("Helvetica-Bold", 16)
+        next_y_position -= line_height * 8
+        self.can.drawString(x_start, next_y_position, "Answers:")
+        self.can.setFont("Helvetica", 12)
+        next_y_position -= line_height * 2
+        for answer in self.answers:
+            self.can.drawString(x_start, next_y_position, f"{'True' if answer else 'False'}")
+            next_y_position -= line_height
 
-        self.can.save()
+        
         self.packet.seek(0)
+        self.can.save()
         return self.packet
         
     pass
 
 class Discussion(Task):
-    pass
+    def __init__(self, topic: str, content_dict: Union[ResponseDiscussion, dict] = None):
+        """
+        Initialize the Discussion task with the given parameters.
+        Args:
+            topic (str): The topic of the discussion
+            content_dict (Union[ResponseDiscussion, dict], optional): Additional content for the task.
+        """
+        super().__init__(skill="Speaking", difficulty="A2", topic=topic, content_dict=content_dict)
+        self.content_dict = content_dict.answer if isinstance(content_dict, ResponseDiscussion) else content_dict
+        self.question = self.content_dict.get("question", "") if self.content_dict else ""
+        self.section = "Discussion_Task"
+    def create_pdf(self, output_path=None):
+        output_path = output_path if output_path else self.create_output_path()
+        pdf_content = self.generate_pdf_content()
+        # Save PDF
+        new_pdf = PdfReader(pdf_content)
+        output_pdf = PdfWriter()
+        output_pdf.add_page(new_pdf.pages[0])
+        if output_path:
+            with open(output_path, "wb") as f:
+                f.write(pdf_content.read())
+        return pdf_content
+    
+    def generate_pdf_content(self):
+        # Positioning
+        x_start = 20 * mm
+        y_start = 270 * mm
+        line_height = 5 * mm
+        
+        # Draw task title
+        self.can.setFont("Helvetica-Bold", 16)
+        self.can.drawString(x_start, y_start, "Discussion Task")
+        
+        # Draw instruction
+        self.can.setFont("Helvetica", 12)
+        instruction = f"Discuss the following question:"
+        self.can.drawString(x_start, y_start - line_height*2, instruction)
+        
+        # Draw question
+        self.can.setFont("Helvetica-Oblique", 12)
+        self.can.drawString(x_start, y_start - line_height*4, self.question)
+        
+        self.packet.seek(0)
+        self.can.save()
+        return self.packet
 
 # Example usage
 if __name__ == "__main__":
@@ -344,17 +436,30 @@ if __name__ == "__main__":
         difficulty = "A2", 
         topic = "An email from a friend",
         task_types = ["TF"], 
-        extract = """
-          Hi Samia,
-          Quick email to say that sounds like a great idea. Saturday is better for me because I’m meeting my parents on Sunday. So if that’s still good for you, why don’t you come here? Then you can see the new flat and all the work we’ve done on the kitchen since we moved in. We can eat at home and then go for a walk in the afternoon. It’s going to be so good to catch up finally. I want to hear all about your new job!
-          Our address is 52 Charles Road, but it’s a bit difficult to find because the house numbers are really strange here. If you turn left at the post office and keep going past the big white house on Charles Road, there’s a small side street behind it with the houses 50–56 in. Don’t ask me why the side street doesn’t have a different name! But call me if you get lost and I’ll come and get you. 
-          Let me know if there’s anything you do/don’t like to eat. Really looking forward to seeing you! <BR/>
-          See you soon!
-          Gregor
-          
-          
-          """
+        content_dict = {
+            "topic": "Asking for help",
+            "extract": "Dear Emily,\nI'm writing to ask for your help. I've been trying to fix my car but it's not working properly.\nCould you please recommend a reliable mechanic in your area? Also, if you have some time,\ncan you assist me with the repairs yourself? I'd really appreciate that because I'm\nnot very experienced with cars.\nI'll keep you updated on how things go. Let me know if you're available this weekend to work\non it together.\nBest regards,\nAlex",
+            "questions": [
+                "The writer is asking for help with car repairs",
+                "Emily has experience in repairing cars",
+                "Alex knows an experienced mechanic",
+                "Alex plans to fix the car himself"
+            ],
+            "answers": [True, False, False, True]
+        }
     )
-    
-    middle_task_test.create_pdf()
+
+    output_path = middle_task_test.create_pdf()
     print("Created middle task PDF.")
+    print(f"path at {output_path}")
+
+
+    discussion_task_test = Discussion(
+        topic="Planning a weekend trip",
+        content_dict={
+            "question": "What activities would you like to do on a weekend trip with friends?"
+        }
+    )
+    output_path = discussion_task_test.create_pdf()
+    print("Created discussion task PDF.")
+    print(f"path at {output_path}")
