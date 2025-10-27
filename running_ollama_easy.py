@@ -60,9 +60,9 @@ class ResourceCreator():
         format = ResponsePrep.model_json_schema()
     )
     response_out = ResponsePrep.model_validate_json(response.message.content)
-    return response_out
+    return response_out.answer if response_out else None
 
-  def create_middle_task_extract(self) -> ResponseMidTask:
+  def create_middle_task(self) -> ResponseMidTask:
     response = chat(model=self.model, messages=[
       {
         'role': 'user',
@@ -97,9 +97,9 @@ class ResourceCreator():
     )
     response_out = ResponseMidTask.model_validate_json(response.message.content)
     self.extract = response_out.answer
-    return response_out
+    return response_out.answer if response_out else None
 
-  def create_middle_task_discussion(self) -> ResponseDiscussion:
+  def create_task_discussion(self) -> ResponseDiscussion:
     response = chat(model=self.model, messages=[
       {
         'role': 'user',
@@ -119,7 +119,7 @@ class ResourceCreator():
         format = ResponseDiscussion.model_json_schema()
     )
     response_out = ResponseDiscussion.model_validate_json(response.message.content)
-    return response_out
+    return response_out.answer if response_out else None
 # This is where the topic name would go. "The topic to create ... "
 
 
@@ -127,4 +127,4 @@ if __name__ == "__main__":
   # res_creator = ResourceCreator(topic="A restaurant menu", model = "deepseek-r1:latest")
   # print(res_creator.create_preparation_task().answer)
   res_creator_2 = ResourceCreator(topic="Asking for help", model = "deepseek-r1:latest")
-  print(res_creator_2.create_middle_task_extract().answer)
+  print(res_creator_2.create_middle_task().answer)

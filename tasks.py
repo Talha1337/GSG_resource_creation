@@ -26,6 +26,8 @@ class Task:
         self.skill = skill
         self.difficulty = difficulty
         self.topic = topic
+        if content_dict is None:
+            print("No content dictionary provided. We will attempt to generate it now...")
         self.content_dict = content_dict.answer if isinstance(content_dict, (ResponsePrep, ResponseMidTask, ResponseMidTaskQuestionsMCQ, ResponseDiscussion)) else content_dict
         self.answer_key = {}
         self.section = "default"
@@ -59,7 +61,7 @@ class PreparationTask(Task):
     Supports matching exercises with customizable content and formatting.
     """
     
-    def __init__(self, skill: str, difficulty: str, topic: str, content_dict: ResponsePrep):
+    def __init__(self, skill: str = None, difficulty: str = None, topic: str = None, content_dict: ResponsePrep = None):
         """
         Initialize a PreparationTask.
         
@@ -67,11 +69,11 @@ class PreparationTask(Task):
             skill (str): The language skill (e.g., "Reading", "Writing", "Speaking", "Listening")
             difficulty (str): The difficulty level (e.g., "A1", "A2", "B1", "B2", "C1")
             topic (str): The topic of the exercise
-            correct_pairs (dict): Dictionary of correct answer pairs. Will contain a key for the labels and a key for the matching answers e.g. {'labels': ['Food Items', 'Descriptions'], 'correct_pairs': {'Spaghetti': 'pasta dish made from dough and sauce', 'Margherita Pizza': 'Italian dish with tomato, mozzarella, and basil', 'Caesar Salad': 'green salad with croutons, parmesan cheese, and Caesar dressing', 'Tiramisu': 'Italian dessert with layers of coffee-soaked ladyfingers and mascarpone'}}
+            correct_pairs (dict): Dictionary of correct answer pairs. Will contain a key for the topic, a key for the labels and a key for the matching answers 
+            e.g. {'topic': Food, 'labels': ['Food Items', 'Descriptions'], 'correct_pairs': {'Spaghetti': 'pasta dish made from dough and sauce', 'Margherita Pizza': 'Italian dish with tomato, mozzarella, and basil', 'Caesar Salad': 'green salad with croutons, parmesan cheese, and Caesar dressing', 'Tiramisu': 'Italian dessert with layers of coffee-soaked ladyfingers and mascarpone'}}
             task_type (str): Type of task (default: "matching")
         """
         super().__init__(skill, difficulty, topic, content_dict)
-        self.correct_pairs = self.content_dict["correct_pairs"]
         self.section = "Preparation_Task"
         
     def _shuffle_answers(self):
@@ -92,7 +94,7 @@ class PreparationTask(Task):
         # Create answer key mapping
         answer_key = {}
         for i, item in enumerate(items):
-            correct_answer = self.correct_pairs[item]
+            correct_answer = self.content_dict["correct_pairs"][item]
             answer_index = answers.index(correct_answer)
             answer_key[str(i+1)] = chr(97 + answer_index)
         
@@ -105,6 +107,9 @@ class PreparationTask(Task):
         Returns:
             BytesIO: PDF content as BytesIO object
         """
+        
+        if packet is None:
+            self.create_pdf_initial()
         
         # Get shuffled content
         items, answers, self.answer_key = self._shuffle_answers()
@@ -141,9 +146,9 @@ class PreparationTask(Task):
         
         # Add answers section
         self._add_answers_section(self.can, x_start, y_start, line_height, len(items))
-
+        
+        # Save the canvas
         self.can.save()
-        self.packet.seek(0)
         return self.packet
 
     def _add_answers_section(self, canvas, x_start, y_start, line_height, num_items):
@@ -191,11 +196,13 @@ class PreparationTask(Task):
         
         # Create PDF content
         pdf_content = self._create_matching_task_pdf()
-        
+        self.packet.seek(0)
+        self.can.save()
         # Save PDF
         new_pdf = PdfReader(pdf_content)
         output_pdf = PdfWriter()
         output_pdf.add_page(new_pdf.pages[0])
+
         
         with open(output_path, "wb") as f:
             output_pdf.write(f)
@@ -209,6 +216,7 @@ class PreparationTask(Task):
         Returns:
             dict: Answer key mapping question numbers to answer letters
         """
+        
         return self.answer_key.copy()
     
     def __str__(self):
@@ -220,7 +228,7 @@ class MiddleTask(Task):
     """Class for building English language reading tasks.
     Supports various task types such as extract, true/false questions, multiple choice questions, and ordering tasks.
     """
-    def __init__(self, skill: str, difficulty: str, topic: str, task_types: list, content_dict: Union[ResponseMidTask, dict] = None):
+    def __init__(self, skill: str = None, difficulty: str = None, topic: str = None, task_types: list = None, content_dict: Union[ResponseMidTask, dict] = None):
         """
         Initialize the MiddleTask with the given parameters.
         Args:
@@ -232,10 +240,13 @@ class MiddleTask(Task):
             content_dict (Union[ResponseMidTask, dict], optional): Additional content for the task.
         """
         super().__init__(skill, difficulty, topic, content_dict)
+        if content_dict is None:
+            print("No content dictionary")
+            return None
         self.content_dict = content_dict.answer if isinstance(content_dict, ResponseMidTask) else content_dict
-        self.extract = self.content_dict.get("extract", "") if self.content_dict else ""
-        self.questions = self.content_dict.get("questions", []) if self.content_dict else []
-        self.answers = self.content_dict.get("answers", []) if self.content_dict else []
+        self.extract = self.content_dict.get("extract", "")
+        self.questions = self.content_dict.get("questions", []) 
+        self.answers = self.content_dict.get("answers", []) 
         if self.topic != self.content_dict.get("topic", ""):
             print(f"Warning: Topic mismatch between provided topic '{self.topic}' and content_dict topic '{self.content_dict.get('topic', '')}'")
         self.task_types = task_types
@@ -255,10 +266,15 @@ class MiddleTask(Task):
         p1.wrapOn(self.can, 150*mm, 250*mm)
         return p1
     
-    def create_pdf(self, output_path=None):
+    def create_pdf(self, output_path=None, packet=None):
+        # If packet is provided, append to existing PDF
+        if packet:
+            pdf_content = self._create_pdf(packet)
+            return pdf_content
+            
         if output_path is None:
             output_path = self.create_output_path()
-            
+
         pdf_content = self._create_pdf()
         # Save PDF
         new_pdf = PdfReader(pdf_content)
@@ -272,8 +288,12 @@ class MiddleTask(Task):
         
         
     
-    def _create_pdf(self):
+    def _create_pdf(self, packet: BytesIO = None) -> BytesIO:
         print(f"Creating PDF for {self.task_types[0]} task...")
+        
+        if packet is None:
+            self.create_pdf_initial()
+        
         # Positioning
         x_start = 20 * mm
         x_answers = x_start + 70 * mm
@@ -335,15 +355,14 @@ class MiddleTask(Task):
             self.can.drawString(x_start, next_y_position, f"{'True' if answer else 'False'}")
             next_y_position -= line_height
 
-        
-        self.packet.seek(0)
+        # Save the canvas
         self.can.save()
         return self.packet
         
     pass
 
 class Discussion(Task):
-    def __init__(self, topic: str, content_dict: Union[ResponseDiscussion, dict] = None):
+    def __init__(self, topic: str = None, content_dict: Union[ResponseDiscussion, dict] = None):
         """
         Initialize the Discussion task with the given parameters.
         Args:
@@ -354,7 +373,11 @@ class Discussion(Task):
         self.content_dict = content_dict.answer if isinstance(content_dict, ResponseDiscussion) else content_dict
         self.question = self.content_dict.get("question", "") if self.content_dict else ""
         self.section = "Discussion_Task"
-    def create_pdf(self, output_path=None):
+    def create_pdf(self, output_path=None, packet=None):
+        if packet:
+            pdf_content = self.generate_pdf_content(packet)
+            return pdf_content
+            
         output_path = output_path if output_path else self.create_output_path()
         pdf_content = self.generate_pdf_content()
         # Save PDF
@@ -366,7 +389,10 @@ class Discussion(Task):
                 f.write(pdf_content.read())
         return pdf_content
     
-    def generate_pdf_content(self):
+    def generate_pdf_content(self, packet: BytesIO = None):
+        if packet:
+            self.packet = packet
+            
         # Positioning
         x_start = 20 * mm
         y_start = 270 * mm
@@ -385,8 +411,9 @@ class Discussion(Task):
         self.can.setFont("Helvetica-Oblique", 12)
         self.can.drawString(x_start, y_start - line_height*4, self.question)
         
-        self.packet.seek(0)
+        # Save the canvas
         self.can.save()
+        self.packet.seek(0)
         return self.packet
 
 # Example usage
@@ -421,7 +448,7 @@ if __name__ == "__main__":
     # Create a different task
     vocabulary_task = PreparationTask(
         skill="Reading",
-        difficulty="B1", 
+        difficulty="B1",
         topic="Business vocabulary",
         content_dict={"labels": ["abbreviation", "title"], "correct_pairs": {"CEO": "Chief Executive Officer", "HR": "Human Resources"}}
     )

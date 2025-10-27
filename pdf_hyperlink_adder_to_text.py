@@ -4,6 +4,28 @@ import os
 import sys
 import fitz  # PyMuPDF
 
+"""
+PDF Hyperlink Adder Script
+
+This script processes PDF files to add hyperlinks to specific keywords found within the text.
+The main functionality includes:
+
+1. PDF Generation: Creates sample PDFs with target keywords embedded in the text
+2. Hyperlink Addition: Finds the first instance of a specified keyword in a PDF and adds a hyperlink to it
+3. Batch Processing: Processes entire folders of PDFs to add hyperlinks to keywords
+4. Filename Parsing: Extracts skill level and topic information from PDF filenames
+
+Key Functions:
+- generate_sample_pdf(): Creates a basic PDF with a target keyword
+- add_link_to_keyword(): Adds a hyperlink to the first instance of a keyword in a PDF
+- parse_filename(): Extracts skill level and topic from structured filenames
+
+The script is designed to work with educational PDFs that follow a naming convention
+like "LearnEnglish-Skill-Level-Topic.pdf" and can add hyperlinks to enhance
+interactive learning materials.
+"""
+
+
 # Step 1: Generate a basic PDF with the target keyword
 def generate_sample_pdf(filename, keyword):
     c = canvas.Canvas(filename, pagesize=A4)
