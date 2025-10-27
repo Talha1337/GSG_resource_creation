@@ -6,6 +6,7 @@ from reportlab.lib.units import mm
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.platypus import Paragraph
 from reportlab.platypus import PageBreak
+from reportlab.lib.colors import black
 from io import BytesIO
 import os
 import random
@@ -330,13 +331,54 @@ class MiddleTask(Task):
         
         # Draw items
         next_y_position -= line_height * 3
-        self.can.setFont("Helvetica", 12)
-        self.can.drawString(x_start, next_y_position, "Determine whether the following statements are True or False based on the extract:")
-        next_y_position -= line_height * 2
+        
+        # Create paragraph style for instruction text
+        instruction_style = ParagraphStyle(
+            'InstructionStyle',
+            fontName='Helvetica',
+            fontSize=12,
+            textColor=black,
+            leftIndent=0,
+            rightIndent=0,
+            spaceAfter=6,
+            spaceBefore=3,
+            alignment=0  # Left alignment
+        )
+        
+        # Draw instruction with text wrapping
+        instruction_text = "Determine whether the following statements are True or False based on the extract:"
+        instruction_paragraph = Paragraph(instruction_text, instruction_style)
+        instruction_paragraph.wrapOn(self.can, 150*mm, 50*mm)
+        instruction_paragraph.drawOn(self.can, x_start, next_y_position)
+        next_y_position -= instruction_paragraph.height + line_height
+        
+        # Create paragraph style for wrapped questions
+        question_style = ParagraphStyle(
+            'QuestionStyle',
+            fontName='Helvetica',
+            fontSize=12,
+            textColor=black,
+            leftIndent=0,
+            rightIndent=0,
+            spaceAfter=3,
+            spaceBefore=3,
+            alignment=0  # Left alignment
+        )
+        
         for i, (question, answer) in enumerate(zip(self.questions, self.answers)):
-            self.can.drawString(x_start, next_y_position, f"{i+1}. {question}")
+            # Create wrapped question text
+            question_text = f"{i+1}. {question}"
+            question_paragraph = Paragraph(question_text, question_style)
+            question_paragraph.wrapOn(self.can, 120*mm, 50*mm)  # Available width and height
+            
+            # Draw the question paragraph
+            question_paragraph.drawOn(self.can, x_start, next_y_position)
+            
+            # Draw True/False label
             self.can.drawRightString(x_start + 180*mm, next_y_position, "True/False")
-            next_y_position -= line_height
+            
+            # Move to next position (account for wrapped text height)
+            next_y_position -= question_paragraph.height + line_height
         
         # Draw Answers section
         # start a new page for the Answers section
@@ -414,9 +456,24 @@ class Discussion(Task):
         instruction = f"Discuss the following question:"
         self.can.drawString(x_start, y_start - line_height*2, instruction)
         
-        # Draw question
-        self.can.setFont("Helvetica-Oblique", 12)
-        self.can.drawString(x_start, y_start - line_height*4, self.question)
+        # Create paragraph style for wrapped text
+        question_style = ParagraphStyle(
+            'QuestionStyle',
+            fontName='Helvetica-Oblique',
+            fontSize=12,
+            textColor=black,
+            leftIndent=0,
+            rightIndent=0,
+            spaceAfter=6,
+            spaceBefore=6,
+            alignment=0  # Left alignment
+        )
+        
+        # Draw question with text wrapping
+        question_paragraph = Paragraph(self.question, question_style)
+        question_paragraph.wrapOn(self.can, 150*mm, 200*mm)  # Available width and height
+        question_y_position = y_start - line_height*4
+        question_paragraph.drawOn(self.can, x_start, question_y_position)
         
         # Save the canvas
         self.can.save()
