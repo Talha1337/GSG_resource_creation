@@ -37,7 +37,6 @@ class ResourceCreator():
     self.topic = topic
     self.difficulty = "A1"
     self.model = model
-    self.extract = None
 
   def create_preparation_task(self) -> ResponsePrep:
     # This creates a ResponsePrep object which can be parsed to populate a PreparationTask
@@ -46,7 +45,7 @@ class ResourceCreator():
         'role': 'user',
         'content': f"""you are a helpful assistant that can help with creating preparation tasks for language learning materials.
         The preparation task should be a one-to-one matching task, matching words from two separate categories. The topic to create this preparation task on is: {self.topic}
-        Provide as output a dictionary containing keys "labels", "correct_pairs".
+        Provide as output a dictionary containing keys "labels", "correct_pairs". Return as JSON.
         
         EXAMPLE OUTPUT:
         {{
@@ -69,7 +68,7 @@ class ResourceCreator():
         'content': f"""You are a helpful assistant that can help with creating extracts for English comprehension tasks, including relevant True/False questions.
         The extract should be approximately 100-150 words in length.
         The extract should be themed corresponding to the topic described. Questions should be based on the extract.
-        The topic to create this extract on is: {self.topic}
+        The topic to create this extract on is: {self.topic}. Return as JSON.
         
         EXAMPLE OUTPUT:
           {{"topic": "An email from a friend",
@@ -95,7 +94,6 @@ class ResourceCreator():
         format = ResponseMidTask.model_json_schema()
     )
     response_out = ResponseMidTask.model_validate_json(response.message.content)
-    self.extract = response_out.answer
     return response_out.answer if response_out else None
 
   def create_discussion(self) -> ResponseDiscussion:
@@ -105,7 +103,7 @@ class ResourceCreator():
         'content': f"""You are a helpful assistant that can help with creating discussion prompts for English comprehension tasks.
         The discussion prompt should consist of a single question.
         The discussion prompt should be related to the topic specified.
-        The topic to create this discussion prompt on is {self.topic}.
+        The topic to create this discussion prompt on is {self.topic}. Return as JSON.
         
         EXAMPLE OUTPUT:
         {{
