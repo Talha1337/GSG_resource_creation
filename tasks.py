@@ -10,7 +10,7 @@ from reportlab.lib.colors import black
 from io import BytesIO
 import os
 import random
-from running_ollama_easy import ResourceCreator, ResponsePrep, ResponseMidTask, ResponseMidTaskQuestionsMCQ, ResponseDiscussion, BaseModel
+from running_ollama_easy import ResourceCreator, ResponsePrep, ResponseMidTask, ResponseMidTask2, ResponseMidTaskQuestionsMCQ, ResponseDiscussion, BaseModel
 
 
 class Task:
@@ -238,7 +238,7 @@ class MiddleTask(Task):
             topic (str): The topic of the exercise
             task_types (list): List of task types to include (e.g., ["TF", "MCQ", "Ordering"])
             extract (str): The text extract for the reading task
-            content_dict (Union[ResponseMidTask, dict], optional): Additional content for the task.
+            content_dict (Union[ResponseMidTask, ResponseMidTask2, dict], optional): Additional content for the task.
         """
         super().__init__(skill, difficulty, topic, content_dict)
         self.task_types = task_types
@@ -246,7 +246,7 @@ class MiddleTask(Task):
         if content_dict is None:
             print("No content dictionary")
             return None
-        self.content_dict = content_dict.answer if isinstance(content_dict, ResponseMidTask) else content_dict
+        self.content_dict = content_dict.answer if isinstance(content_dict, (ResponseMidTask, ResponseMidTask2)) else content_dict
         self.update_attributes()
         
     def update_attributes(self):
