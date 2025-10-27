@@ -29,7 +29,7 @@ class ResponseMidTaskOrdering(BaseModel):
   correct_order: list[int]
   
 class ResponseDiscussion(BaseModel):
-  answer: str
+  answer: dict
  
  
 class ResourceCreator():
@@ -70,7 +70,6 @@ class ResourceCreator():
         The extract should be approximately 100-150 words in length.
         The extract should be themed corresponding to the topic described. Questions should be based on the extract.
         The topic to create this extract on is: {self.topic}
-        Provide as output a string for this extract.
         
         EXAMPLE OUTPUT:
           {{"topic": "An email from a friend",
@@ -99,18 +98,19 @@ class ResourceCreator():
     self.extract = response_out.answer
     return response_out.answer if response_out else None
 
-  def create_task_discussion(self) -> ResponseDiscussion:
+  def create_discussion(self) -> ResponseDiscussion:
     response = chat(model=self.model, messages=[
       {
         'role': 'user',
-        'content': f"""you are a helpful assistant that can help with creating preparation tasks for language learning materials.
-        The preparation task should be a one-to-one matching task, matching words from two separate categories. The topic to create this preparation task on is: {self.topic}
-        Provide as output a dictionary containing keys "labels", "correct_pairs".
+        'content': f"""You are a helpful assistant that can help with creating discussion prompts for English comprehension tasks.
+        The discussion prompt should consist of a single question.
+        The discussion prompt should be related to the topic specified.
+        The topic to create this discussion prompt on is {self.topic}.
         
         EXAMPLE OUTPUT:
         {{
-          "labels": ["Cities", "Countries"], 
-          "correct_pairs": {{"Beijing": "China", "Buenos Aires": "Argentina", "Los Angeles": "The United States of America", "Amsterdam": "The Netherlands", "Mexico City": "Mexico", "Seoul": "The Republic of Korea", "Christchurch": "New Zealand", "Moscow": "Russia"}}
+          "topic": "An international departures board"
+          "question": "How often do you travel by plane? Which countries would you like to visit?"
           }}
         
         """,

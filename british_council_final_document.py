@@ -68,6 +68,10 @@ class BritishCouncilFinalDocument:
             print("No middle task content provided.")
             print("We will attempt to generate it now...")
             self.middle_task.content_dict = self.creator.create_middle_task()
+            self.middle_task.update_attributes()
+            print("---MIDDLE TASK CONFTETNT DICT---")
+            print(self.middle_task.content_dict)
+            print("---MIDDLE TASK CONTENT DICT END---")
         
         # Create PDF for middle task
         mid_pdf = self.middle_task._create_pdf()
@@ -82,6 +86,7 @@ class BritishCouncilFinalDocument:
             print("No discussion content provided.")
             print("We will attempt to generate it now...")
             self.discussion.content_dict = self.creator.create_discussion()
+            self.discussion.update_attributes()
             print("--CONTENT DICTIONARY--")
             print(self.discussion.content_dict)
             print("--CONTENT DICTIONARY--")

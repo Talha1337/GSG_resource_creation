@@ -240,17 +240,20 @@ class MiddleTask(Task):
             content_dict (Union[ResponseMidTask, dict], optional): Additional content for the task.
         """
         super().__init__(skill, difficulty, topic, content_dict)
+        self.task_types = task_types
+        self.section = "Middle_Task"
         if content_dict is None:
             print("No content dictionary")
             return None
         self.content_dict = content_dict.answer if isinstance(content_dict, ResponseMidTask) else content_dict
-        self.extract = self.content_dict.get("extract", "")
+        self.update_attributes()
+        
+    def update_attributes(self):
         self.questions = self.content_dict.get("questions", []) 
         self.answers = self.content_dict.get("answers", []) 
+        self.extract = self.content_dict.get("extract", "")
         if self.topic != self.content_dict.get("topic", ""):
             print(f"Warning: Topic mismatch between provided topic '{self.topic}' and content_dict topic '{self.content_dict.get('topic', '')}'")
-        self.task_types = task_types
-        self.section = "Middle_Task"
         
     def display_true_false_questions(self):
         print("True/False Questions:")
@@ -373,6 +376,10 @@ class Discussion(Task):
         self.content_dict = content_dict.answer if isinstance(content_dict, ResponseDiscussion) else content_dict
         self.question = self.content_dict.get("question", "") if self.content_dict else ""
         self.section = "Discussion_Task"
+        
+    def update_attributes(self):
+        self.question = self.content_dict["question"]
+        
     def create_pdf(self, output_path=None, packet=None):
         if packet:
             pdf_content = self.generate_pdf_content(packet)
