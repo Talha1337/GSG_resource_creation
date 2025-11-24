@@ -4,12 +4,15 @@ from pydantic import BaseModel
 
 
 class ResponsePrep(BaseModel):
+  explanation : str
   answer: dict
 
 class ResponseMidTask(BaseModel):
+  explanation : str
   answer: dict
   
 class ResponseMidTask2(BaseModel):
+  explanation : str
   topic: str
   extract : str
   questions: list[str]
@@ -21,6 +24,7 @@ class ResponseMidTaskQuestionsMCQ(BaseModel):
   Args:
       BaseModel (pydantic.BaseModel): Base model for data validation.
   """
+  explanation : str
   questions: list[str]
   options: list[list[str]]
   answers: list[str]
@@ -30,11 +34,12 @@ class ResponseMidTaskOrdering(BaseModel):
   Args:
       BaseModel (pydantic.BaseModel): Base model for data validation.
   """
-  
+  explanation : str
   items: list[str]
   correct_order: list[int]
   
 class ResponseDiscussion(BaseModel):
+  explanation : str
   answer: dict
  
  
